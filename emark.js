@@ -117,7 +117,12 @@ function random_matrix(rows,cols){
 
 function str_2_vector(str,elems){
 	var data;
-	data = str.split(" ");
+	var aux;
+	aux = str.split(" ");
+	data = new Array(elems);
+	for(var i =0;i<elems;i++){
+		data[i] = parseFloat(aux[i]);
+	}
 	var v = {
 		n : elems,
 		data : data
@@ -130,8 +135,9 @@ function str_2_matrix(str,rows,cols){
 	var data = [];
 	var aux = str.split(";");
 	for(var i = 0;i<rows;i++){
-		data.push(str_2_vector(aux[i]));
+		data.push(str_2_vector(aux[i],cols));
 	}
+	console.log(data);
 	var M = {
 		rows : rows,
 		cols : cols,
@@ -373,6 +379,29 @@ function eigen_matrix(m1,N){
 	return out;
 }
 
+function solve_linear_system(m,b){
+	var z = init_vector(b.n);
+	var out = init_vector(b.n);
+	var lu = lu_fact_matrix(m);
+	var s;
+	
+	for(var j = 0;j<b.n;j++){
+		s = 0;
+		for(var k = 0;k<j;k++){
+			s = s + lu[0].data[j].data[k]*z.data[k];
+		}
+		z.data[j] = b.data[j] - s;
+	}
+	for(var j = b.n-1;j>=0;j--){
+		s = 0;
+		for(var k = j+1;k<b.n;k++){
+			s = s + lu[1].data[j].data[k]*out.data[k];
+		}
+		out.data[j] = (z.data[j] - s)/lu[1].data[j].data[j];
+	}
+	return out;
+}
+
 //////////////////
 /*Neural Network*/
 //////////////////
@@ -462,4 +491,81 @@ function init_mlp(structure){
 
 	};
 	return n;
+}
+
+/////////////////////////////
+/*Solve non-linear equation*/
+/////////////////////////////
+
+function newton_method(fun_f,fun_df,x0,N){
+	var x;
+	x = x0;
+	for(var i = 0;i < N;i++){
+		x = x - fun_f(x)/fun_df(x0);
+	}
+	return x;
+}
+
+function bisection_method(fun_f,a,b,N){
+	var xa;
+	var xb;
+	var mid;
+	xa = a;
+	xb = b;
+	for(var i = 0;i<N;i++){
+		mid = (xa + xb)/2;
+		if(fun_f(xa)*fun_f(mid) <0){
+			xb = mid;
+		}
+		else{
+			xa = mid;
+		}
+	}
+	return xa;
+}
+
+////////////////
+/* Statistics */
+////////////////
+
+function average(v){
+	var out;
+	out = 0;
+	for(var i =0;i<v.n;i++){
+		out = out + v.data[i];
+	}
+	out = out/v.n;
+	return out;
+}
+
+function std_deviation(v){
+	var avg = average(v);
+	var out = 0;
+	for(var i = 0;i < v.n;i++){
+		out = out + (v.data[i] - avg)*(v.data[i] - avg);
+	}
+	out = Math.sqrt(out/v.n);
+	return out;
+}
+
+function linear_regression(x_data,y_data){
+	var A = init_matrix(2,2);
+	var b = init_vector(2);
+	var sx = 0;
+	var sy = 0;
+	for(var i =0;i<x_data.n;i++){
+		sx = sx + x_data.data[i];
+	}
+	for(var i =0;i<y_data.n;i++){
+		sy = sy + y_data.data[i];
+	}
+	A.data[0].data[0] = dot_vector(x_data,x_data);
+	A.data[0].data[1] = sx;
+	A.data[1].data[0] = sx;
+	A.data[1].data[1] = x_data.n;
+	b.data[0] = dot_vector(x_data,y_data);
+	b.data[1] = sy;
+	print_matrix(A);
+	print_vector(b);
+	return solve_linear_system(A,b);
 }
