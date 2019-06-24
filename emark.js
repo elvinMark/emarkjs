@@ -189,7 +189,7 @@ function dot_vector(v1,v2){
 function prod_vector(l,v1){
 	var out = init_vector(v1.n);
 	for(var i = 0;i<v1.n;i++){
-		out = out + l*v1.data[i];
+		out.data[i] = l*v1.data[i];
 	}
 	return out;	
 }
@@ -302,6 +302,73 @@ function det_matrix(m1){
 	lu = lu_fact_matrix(m1);
 	for(var i = 0;i<m1.rows;i++){
 		out = out * lu[1].data[i].data[i];
+	}
+	return out;
+}
+
+function inverse_matrix(m1){
+	var out = init_matrix(m1.rows,m1.cols);
+	var z = init_vector(m1.rows);
+	var lu;
+	var s;
+
+	lu = lu_fact_matrix(m1);
+	for(var i = 0;i<m1.rows;i++){
+		for(var j = 0;j<m1.rows;j++){
+			s = 0;
+			for(var k = 0;k<j;k++){
+				s = s + lu[0].data[j].data[k]*z.data[k]; 
+			}
+			if(i==j){
+				z.data[j] = 1 - s;
+			}
+			else{
+				z.data[j] = -s;
+			} 
+		}
+		for(var j = m1.rows-1;j>=0;j--){
+			s = 0;
+			for(var k=j+1;k<m1.rows;k++){
+				s = s + lu[1].data[j].data[k]*out.data[k].data[i];
+			}
+			out.data[j].data[i] = (z.data[j] - s)/lu[1].data[j].data[j];
+		}
+	}
+	return out;
+}
+
+function qr_fact_matrix(m1){
+	var Q,R;
+	var out = [];
+	var aux;
+	var m = trans_matrix(m1);
+	Q = init_matrix(m1.rows,m1.cols);
+	R = init_matrix(m1.rows,m1.cols);
+	for(var i = 0;i<m.rows;i++){
+		aux = init_vector(m.rows);
+		for(var j = 0;j<i;j++){
+			aux = sum_vector(aux,prod_vector(dot_vector(m.data[i],Q.data[j]),Q.data[j]));
+		}
+		aux = diff_vector(m.data[i],aux);
+		R.data[i].data[i] = norm_vector(aux);
+		aux = prod_vector(1/R.data[i].data[i],aux);
+		Q.data[i] = aux;
+		for(var j=0;j<i;j++){
+			R.data[i].data[j] = dot_vector(m.data[i],Q.data[j]);
+		}
+	}
+	out.push(trans_matrix(Q));
+	out.push(trans_matrix(R));
+	return out;
+}
+
+function eigen_matrix(m1,N){
+	var qr;
+	var out;
+	out = m1;
+	for(var i = 0;i<N;i++){
+		qr  = qr_fact_matrix(out);
+		out = dot_matrix(qr[1],qr[0]);
 	}
 	return out;
 }
