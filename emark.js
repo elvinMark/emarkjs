@@ -524,6 +524,25 @@ function bisection_method(fun_f,a,b,N){
 	return xa;
 }
 
+//////////////
+/* Calculus */
+//////////////
+
+function derivate_function(fun_f,x0,h){
+	return (fun_f(x0+h) - fun_f(x0))/h;
+}
+
+function integral_function(fun_f,a,b,N){
+	var h = (b-a)/N;
+	var s = 0;
+	var x = a;
+	for(var i = 0;i<N;i++){
+		s = s + fun_f(x)*h;
+		x = x + h;
+	}
+	return h;
+}
+
 ////////////////
 /* Statistics */
 ////////////////
@@ -548,6 +567,18 @@ function std_deviation(v){
 	return out;
 }
 
+function combinatory(n,k){
+	if(k==0 || k == n)
+		return 1;
+	return combinatory(n-1,k) + combinatory(n-1,k-1);
+}
+
+function factorial(n){
+	if(n==0 || n==1)
+		return 1;
+	return n*factorial(n-1);
+}
+
 function linear_regression(x_data,y_data){
 	var A = init_matrix(2,2);
 	var b = init_vector(2);
@@ -568,4 +599,12 @@ function linear_regression(x_data,y_data){
 	print_matrix(A);
 	print_vector(b);
 	return solve_linear_system(A,b);
+}
+
+function gaussian_distribution(x,avg,std){
+	return (1/Math.sqrt(2*Math.PI*std*std))*Math.exp(-Math.pow(x-avg,2)/(2*Math.pow(std,2)));
+}
+
+function binomial_distribution(x,p,N){
+	return combinatory(N,x)*Math.pow(p,x)*Math.pow(1-p,N-x);
 }
