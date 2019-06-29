@@ -402,6 +402,78 @@ function solve_linear_system(m,b){
 	return out;
 }
 
+/////////////////////
+/* Complex Numbers */
+/////////////////////
+
+function init_complex(r,i){
+	var out = {
+		re : r,
+		im : i
+	};
+	return out;
+}
+
+function sum_complex(c1,c2){
+	var out = init_complex(c1.re + c2.re,c1.im + c2.im);
+	return out;
+}
+
+function diff_complex(c1,c2){
+	var out = init_complex(c1.re - c2.re,c1.im - c2.im);
+	return out;	
+}
+
+function prod_complex(c1,c2){
+	var out = init_complex(c1.re*c2.re - c1.im*c2.im,c1.im*c2.re + c1.re*c2.im);
+	return out;
+}
+
+function conjugate_complex(c1){
+	return init_complex(c1.re,-c1.im);
+}
+
+function norm_complex(c1){
+	return Math.sqrt(c1.re*c1.re + c1*im*c1.im);
+}
+
+function arg_complex(c1){
+	return Math.atan(c1.im/c1.re);
+}
+
+function exp_complex(c1){
+	var out = init_complex(Math.exp(c1.re)*Math.cos(c1.im),Math.exp(c1.re)*Math.sin(c1.im));
+	return out;
+}
+
+function norm_complex(c1){
+	return Math.sqrt(c1.re*c1.re + c1.im*c1.im);
+}
+
+function fft(data){
+	if (data.length == 1){
+		return [data[0]];
+	}
+	var data_o = [];
+	var data_e = [];
+	var N = data.length;
+	for(var i = 0;i<N;i++){
+		if(i%2){
+			data_o.push(data[i]);
+		}
+		else{
+			data_e.push(data[i]);
+		}
+	}
+	var x1 = fft(data_o);
+	var x2 = fft(data_e);
+	var out = [];
+	for(var k = 0;k<N;k++){
+		out.push(sum_complex(x2[k%(N/2)],prod_complex(x1[k%(N/2)],exp_complex(init_complex(0,2*Math.PI*k/N)))));
+	}
+	return out;
+}
+
 //////////////////
 /*Neural Network*/
 //////////////////
