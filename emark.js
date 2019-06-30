@@ -137,7 +137,6 @@ function str_2_matrix(str,rows,cols){
 	for(var i = 0;i<rows;i++){
 		data.push(str_2_vector(aux[i],cols));
 	}
-	console.log(data);
 	var M = {
 		rows : rows,
 		cols : cols,
@@ -679,4 +678,81 @@ function gaussian_distribution(x,avg,std){
 
 function binomial_distribution(x,p,N){
 	return combinatory(N,x)*Math.pow(p,x)*Math.pow(1-p,N-x);
+}
+
+///////////////////
+/* Graphing Tool */
+///////////////////
+
+function init_graph(context,WIDTH,HEIGHT,xlim,ylim){
+	var out = {
+		ctx : context,
+		h : HEIGHT,
+		w : WIDTH,
+		xlim : xlim,
+		ylim : ylim,
+		hx : WIDTH/(xlim[1] - xlim[0]),
+		hy : HEIGHT/(ylim[1] - ylim[0]),
+		draw_background : function(Nx,Ny){
+			var hx = this.w/Nx;
+			var hy = this.h/Ny;
+			this.ctx.beginPath();
+			this.ctx.strokeStyle = "#000000";
+			this.ctx.lineWidth = 0.5;
+			for(var i = 0;i<Nx;i++){
+				this.ctx.moveTo(i*hx,0);
+				this.ctx.lineTo(i*hx,this.h);
+			}
+			for(var i =0;i<Ny;i++){
+				this.ctx.moveTo(0,i*hy);
+				this.ctx.lineTo(this.h,i*hy);	
+			}
+			this.ctx.stroke();
+			this.ctx.beginPath();
+			this.ctx.strokeStyle = "#CC0000";
+			this.ctx.lineWidth = 2;
+			this.ctx.moveTo(0,Ny*hy/2);
+			this.ctx.lineTo(this.w,Ny*hy/2);
+			this.ctx.moveTo(Nx*hx/2,0);
+			this.ctx.lineTo(Nx*hx/2,this.h);
+			this.ctx.stroke();
+		},
+		draw_arrow : function(r0,rf){
+			var v1 = rf[0] - r0[0];
+			var v2 = rf[1] - r0[1];
+			var d = Math.sqrt(v1*v1 + v2*v2);
+			var u1 = -v1/d;
+			var u2 = -v2/d;
+			var p11 = rf[0] + (d/20)*(u1*Math.cos(Math.PI/7) - u2*Math.sin(Math.PI/7));
+			var p12 = rf[1] + (d/20)*(u1*Math.sin(Math.PI/7) + u2*Math.cos(Math.PI/7));
+			var p21 = rf[0] + (d/20)*(u1*Math.cos(-Math.PI/7) - u2*Math.sin(-Math.PI/7));
+			var p22 = rf[1] + (d/20)*(u1*Math.sin(-Math.PI/7) + u2*Math.cos(-Math.PI/7));
+			this.ctx.lineWidth = 2;
+			this.ctx.strokeStyle = "#0000CC";
+			this.ctx.beginPath();
+			this.ctx.moveTo(this.w/2 + r0[0]*this.hx,this.h/2 - r0[1]*this.hy);
+			this.ctx.lineTo(this.w/2 + rf[0]*this.hx,this.h/2 - rf[1]*this.hy);
+			this.ctx.lineTo(this.w/2 + p11*this.hx,this.h/2 - p12*this.hy);
+			this.ctx.lineTo(this.w/2 + p21*this.hx,this.h/2 - p22*this.hy);
+			this.ctx.lineTo(this.w/2 + rf[0]*this.hx,this.h/2 - rf[1]*this.hy);
+			this.ctx.fillStyle = "#0000CC";
+			this.ctx.fill();
+			this.ctx.stroke();
+		},
+		plot : function(datax,datay){
+			var N = datax.length;
+			this.ctx.lineWidth = 1;
+			this.ctx.strokeStyle = "#0000AA";
+			this.ctx.beginPath();
+			this.ctx.moveTo(this.w/2 + this.hx*datax[0],this.h/2 - this.hy*datay[0]);
+			for(var i = 1;i<N;i++){
+				this.ctx.lineTo(this.w/2 + this.hx*datax[i],this.h/2 - this.hy*datay[i]);
+			}
+			this.ctx.stroke();
+		},
+		clear : function(){
+			this.ctx.clear(0,0,this.w,this.h);
+		}
+	};
+	return out;
 }
