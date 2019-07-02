@@ -370,12 +370,15 @@ function qr_fact_matrix(m1){
 function eigen_matrix(m1,N){
 	var qr;
 	var out;
+	var out_vec;
 	out = m1;
+	out_vec = identity_matrix(m1.rows);
 	for(var i = 0;i<N;i++){
 		qr  = qr_fact_matrix(out);
 		out = dot_matrix(qr[1],qr[0]);
+		out_vec = dot_matrix(out_vec,qr[0]);
 	}
-	return out;
+	return [out,out_vec];
 }
 
 function solve_linear_system(m,b){
@@ -443,10 +446,6 @@ function arg_complex(c1){
 function exp_complex(c1){
 	var out = init_complex(Math.exp(c1.re)*Math.cos(c1.im),Math.exp(c1.re)*Math.sin(c1.im));
 	return out;
-}
-
-function norm_complex(c1){
-	return Math.sqrt(c1.re*c1.re + c1.im*c1.im);
 }
 
 function fft(data){
