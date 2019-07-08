@@ -1,3 +1,8 @@
+///////////////////////////
+/* Author: Elvin Mark MV */
+///////////////////////////
+
+
 ////////////////////
 /* Linear Algebra */
 ////////////////////
@@ -264,6 +269,19 @@ function prod_num_matrix(l,m1){
 	return out;
 }
 
+function prod_matrix_vector(m,v){
+	var out = init_vector(m.rows);
+	var s ;
+	for(var i=0;i<m.rows;i++){
+		s = 0;
+		for(var j=0;j<m.cols;j++){
+			s = s + m.data[i].data[j]*v.data[j];
+		}
+		out.data[i] = s;
+	}
+	return out;
+}
+
 function trans_matrix(m1){
 	var out = init_matrix(m1.cols,m1.rows);
 	for(var i = 0;i<m1.rows;i++){
@@ -436,7 +454,7 @@ function conjugate_complex(c1){
 }
 
 function norm_complex(c1){
-	return Math.sqrt(c1.re*c1.re + c1*im*c1.im);
+	return Math.sqrt(c1.re*c1.re + c1.im*c1.im);
 }
 
 function arg_complex(c1){
@@ -613,6 +631,124 @@ function integral_function(fun_f,a,b,N){
 	return h;
 }
 
+function ode_solver(fun_f,x0,a,b,N){
+	var h = (b-a)/N;
+	var t = a;
+	var out_x = [];
+	var out_t = []
+	var aux,dx;
+	out_x.push(x0);
+	out_t.push(t);
+	for(var i = 1;i<N;i++){
+		dx = fun_f(t,out_x[i-1]);
+		dx = prod_vector(h,dx);
+		aux = sum_vector(out_x[i-1],dx);
+		t = t + h;
+		out_x.push(aux);
+		out_t.push(t);
+	}
+	return [out_t,out_x];
+}
+
+////////////////
+/* Polynomial */
+////////////////
+
+function init_polynomial(degree){
+	var p = new Array(degree + 1);
+	for(var i = 0;i<=degree;i++){
+		p[i] = 0;
+	}
+	return p;
+}
+
+function eval_polynomial(p,x){
+	var s=0;
+	var x0=1;
+	for(var i = 0;i<p.length;i++){
+		s = s + p[i]*x0;
+		x0 = x0*x;
+	}
+	return s;
+}
+
+function prod_polynomial(p1,p2){
+	var p;
+	var n1,n2;
+	n1 = p1.length;
+	n2 = p2.length;
+	p = init_polynomial(n1 + n2 - 2);
+	for(var i = 0;i<n1;i++){
+		for(var j = 0;j<n2;j++){
+			p[i + j] = p[i + j] + p1[i]*p2[j];
+		}
+	}
+	return p;
+}
+function sum_polynomial(p1,p2){
+	var out ;
+	var n1,n2,n;
+	n1 = p1.length;
+	n2 = p2.length;
+	n = n1 > n2? n1 : n2;
+	out = new Array(n);
+	if(n1 > n2){
+		for(var i = 0;i<n2;i++){
+			out[i] = p1[i] + p2[i];
+		}
+		for(var i = n2; i<n1;i++){
+			out[i] = p1[i];
+		}
+	}
+	else{
+		for(var i = 0;i<n1;i++){
+			out[i] = p1[i] + p2[i];
+		}
+		for(var i = n1; i<n2;i++){
+			out[i] = p2[i];
+		}
+	}
+	return out;
+}
+
+function prod_num_polynomial(num,p1){
+	var out;
+	var n;
+	n = p1.length;
+	out = new Array(n);
+	for(var i = 0;i<n;i++){
+		out[i] = num*p1[i];
+	}
+	return out;
+}
+
+/////////////\//////
+/* Interpolation */
+///////////////////
+
+function lagrange_interpolation(data){
+	var out =[];
+	var n;
+	var p;
+	var s;
+	n = data.length;
+	out = init_polynomial(n-1);
+	for(var i = 0;i<n;i++){
+		p = [1,0];
+		s = 1;
+		for(var j = 0;j<n;j++){
+			if(i!=j){
+				p = prod_polynomial(p,[-data[j][0],1]);
+				s = s*(data[i][0]-data[j][0]);
+			}
+		}
+		p=prod_num_polynomial(data[i][1]/s,p);
+		out = sum_polynomial(out,p);
+	}
+	return out;
+}
+
+
 ////////////////
 /* Statistics */
 ////////////////
@@ -715,33 +851,48 @@ function init_graph(context,WIDTH,HEIGHT,xlim,ylim){
 			this.ctx.moveTo(Nx*hx/2,0);
 			this.ctx.lineTo(Nx*hx/2,this.h);
 			this.ctx.stroke();
+			this.ctx.beginPath();
+			this.ctx.strokeStyle = "#000000";
+			this.ctx.font ="7px Arial";
+			for(var i = 0;i<Nx;i++){
+				this.ctx.moveTo(i*hx,this.h/2-5);
+				this.ctx.lineTo(i*hx,this.h/2+5);
+				this.ctx.fillText(((i*hx-this.w/2)/this.hx).toFixed(2),i*hx-5,this.h/2+20);
+			}
+			for(var i = 0;i<Ny;i++){
+				this.ctx.moveTo(this.w/2-5,i*hy);
+				this.ctx.lineTo(this.w/2+5,i*hy);
+				this.ctx.fillText(((i*hy-this.h/2)/this.hy).toFixed(2),this.w/2-40,i*hy+5);
+			}
+			this.ctx.stroke();
+			
 		},
-		draw_arrow : function(r0,rf){
+		draw_arrow : function(r0,rf,color){
 			var v1 = rf[0] - r0[0];
 			var v2 = rf[1] - r0[1];
 			var d = Math.sqrt(v1*v1 + v2*v2);
 			var u1 = -v1/d;
 			var u2 = -v2/d;
-			var p11 = rf[0] + (d/20)*(u1*Math.cos(Math.PI/7) - u2*Math.sin(Math.PI/7));
-			var p12 = rf[1] + (d/20)*(u1*Math.sin(Math.PI/7) + u2*Math.cos(Math.PI/7));
-			var p21 = rf[0] + (d/20)*(u1*Math.cos(-Math.PI/7) - u2*Math.sin(-Math.PI/7));
-			var p22 = rf[1] + (d/20)*(u1*Math.sin(-Math.PI/7) + u2*Math.cos(-Math.PI/7));
+			var p11 = rf[0] + (d/10)*(u1*Math.cos(Math.PI/7) - u2*Math.sin(Math.PI/7));
+			var p12 = rf[1] + (d/10)*(u1*Math.sin(Math.PI/7) + u2*Math.cos(Math.PI/7));
+			var p21 = rf[0] + (d/10)*(u1*Math.cos(-Math.PI/7) - u2*Math.sin(-Math.PI/7));
+			var p22 = rf[1] + (d/10)*(u1*Math.sin(-Math.PI/7) + u2*Math.cos(-Math.PI/7));
 			this.ctx.lineWidth = 2;
-			this.ctx.strokeStyle = "#0000CC";
+			this.ctx.strokeStyle = color;
 			this.ctx.beginPath();
 			this.ctx.moveTo(this.w/2 + r0[0]*this.hx,this.h/2 - r0[1]*this.hy);
 			this.ctx.lineTo(this.w/2 + rf[0]*this.hx,this.h/2 - rf[1]*this.hy);
 			this.ctx.lineTo(this.w/2 + p11*this.hx,this.h/2 - p12*this.hy);
 			this.ctx.lineTo(this.w/2 + p21*this.hx,this.h/2 - p22*this.hy);
 			this.ctx.lineTo(this.w/2 + rf[0]*this.hx,this.h/2 - rf[1]*this.hy);
-			this.ctx.fillStyle = "#0000CC";
+			this.ctx.fillStyle = color;
 			this.ctx.fill();
 			this.ctx.stroke();
 		},
-		plot : function(datax,datay){
+		plot : function(datax,datay,color){
 			var N = datax.length;
 			this.ctx.lineWidth = 1;
-			this.ctx.strokeStyle = "#0000AA";
+			this.ctx.strokeStyle = color;
 			this.ctx.beginPath();
 			this.ctx.moveTo(this.w/2 + this.hx*datax[0],this.h/2 - this.hy*datay[0]);
 			for(var i = 1;i<N;i++){
@@ -750,7 +901,7 @@ function init_graph(context,WIDTH,HEIGHT,xlim,ylim){
 			this.ctx.stroke();
 		},
 		clear : function(){
-			this.ctx.clear(0,0,this.w,this.h);
+			this.ctx.clearRect(0,0,this.w,this.h);
 		}
 	};
 	return out;
