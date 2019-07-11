@@ -650,6 +650,50 @@ function ode_solver(fun_f,x0,a,b,N){
 	return [out_t,out_x];
 }
 
+function ode_runge_kutta(fun_f,x0,a,b,N){
+	var h = (b-a)/N;
+	var t = a;
+	var k1 = init_vector(x0.length);
+	var k2 = init_vector(x0.length);
+	var k3 = init_vector(x0.length);
+	var k4 = init_vector(x0.length);
+	var out_x = [];
+	var out_t = [];
+	out_x.push(x0);
+	out_t.push(t);
+	for(var i = 1;i<N;i++){
+		k1 = fun_f(t,out_x[i-1]);
+		k1 = prod_vector(h,k1);
+		
+		k2 = prod_vector(0.5,k1);
+		k2 = sum_vector(out_x[i-1],k2);
+		k2 = fun_f(t+h/2,k2);
+		k2 = prod_vector(h,k2);
+		
+		k3 = prod_vector(0.5,k2);
+		k3 = sum_vector(out_x[i-1],k3);
+		k3 = fun_f(t+h/2,k3);
+		k3 = prod_vector(h,k3);
+
+		k4 = sum_vector(out_x[i-1],k3);
+		k4 = fun_f(t+h,k4);
+		k4 = prod_vector(h,k4);
+		
+		t = t + h;
+		k2 = prod_vector(2,k2);
+		k3 = prod_vector(2,k3);
+		k1 = sum_vector(k1,k2);
+		k1 = sum_vector(k1,k3);
+		k1 = sum_vector(k1,k4);
+		k1 = prod_vector(1.0/6.0,k1);
+		k1 = sum_vector(out_x[i-1],k1);
+
+		out_t.push(t);
+		out_x.push(k1);
+	}
+	return [out_t,out_x];
+}
+
 ////////////////
 /* Polynomial */
 ////////////////
