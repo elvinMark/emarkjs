@@ -305,6 +305,27 @@ function eMatrix(rows,cols,str){
 		out.push(eigv);
 		return out;
 	};
+	this.linear_system = function(b){
+		var z,out;
+		var lu;
+		var s;
+		lu = this.LU();
+		z = new eVector(b.length);
+		out = new eVector(b.length);
+		for(var i = 0;i<this.rows;i++){
+			s = 0;
+			for(var j = 0;j<i;j++)
+				s = s + lu[0].data[i].data[j]*z.data[j];
+			z.data[i] = b.data[i] - s;
+		}
+		for(var i = this.rows-1;i>=0;i--){
+			s = 0;
+			for(var j = i+1;j<this.rows;j++)
+				s = s + lu[1].data[i].data[j]*out.data[j];
+			out.data[i] = (z.data[i] - s)/lu[1].data[i].data[i];
+		}
+		return out;
+	};
 }
 
 /**********************/
@@ -634,4 +655,94 @@ function eMLP(struct){
 			this.update();
 		}
 	};
+}
+
+/**********************/
+/*Statistics functions*/
+/**********************/
+function stats_average(data){
+	var s = 0;
+	for(var i = 0;i<data.length;i++)
+		s = s + data.data[i];
+	return s/data.length;
+}
+function stats_std_deviation(data){
+	var avg = stats_average(data);
+	for(var i = 0;i<data.length;i++)
+		s = s + (data.data[i]-avg)*(data.data[i]-avg);
+	return Math.sqrt(s/data.length);
+}
+function stats_linear_regression(x,y){
+	var A,b;
+	var sx=0,sy=0,sx2=0,sxy=0;
+	A = new eMatrix(2,2);
+	b = new eVector(2);
+	for(var i = 0;i<x.length;i++){
+		sx = sx + x.data[i];
+		sy = sy + y.data[i];
+		sx2 = sx2 + x.data[i]*x.data[i];
+		sxy = sxy + x.data[i]*y.data[i];
+	}
+	A.data[0].data[0] = sx2;
+	A.data[0].data[1] = sx;
+	A.data[1].data[0] = sx;
+	A.data[1].data[1] = x.length;
+	b.data[0] = sxy;
+	b.data[1] = sy;
+	return A.linear_system(b);
+}
+
+/*********************/
+/*Non-Linear equation*/
+/*********************/
+function bisection_method(fun_f,a,b,N){
+	var fa,fx;
+	var x;
+	for(var i = 0;i<N;i++){
+		fa = fun_f(a);
+		x = (a+b)/2;
+		fx = fun_f(x);
+		if(fx == 0)
+			break;
+		if(fx*fa<0)
+			b = x;
+		else
+			a = x
+	}
+	return x;
+}
+function newton_method(fun_f,fun_df,x0,N){
+	var fx,dfx;
+	var x;
+	x = x0;
+	for(var i=0;i<N;i++){
+		fx = fun_f(x);
+		if(fx == 0)
+			break;
+		dfx = fun_df(x);
+		if(dfx != 0)
+			x = x - fx/dfx
+		else break;
+	}
+	return x;
+}
+function secant_method(fun_f,a,b,N){
+	var x;
+	var fa,fb;
+	for(var i = 0;i<N;i++){
+		fa = fun_f(a);
+		fb = fun_f(b);
+		x = b - fb*(b-a)/(fb-fa);
+		if(x>b){
+			a = b;
+			b = x;
+		}
+		else{
+			b = a;
+			a = x;
+		}
+		if(fb == 0)
+			break;
+	}
+	return x;
 }
