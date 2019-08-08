@@ -83,6 +83,19 @@ function eVector(length,str){
 	this.proj = function(v){
 		return v.times(this.dot(v));
 	};
+	this.toMatrix =function(){
+		var out;
+		out = new eMatrix(1,this.length);
+		out.data[0] = this.copy;
+		return out;
+	}
+	this.transpose = function(){
+		var out;
+		out = new eMatrix(this.length,1);
+		for(var i=0;i<this.length;i++)
+			out.data[i].data[0] = this.data[i];
+		return out;
+	}
 }
 
 /**************/
@@ -430,6 +443,14 @@ function ePoly(degree,coeff){
 		s = s + this.coeff.data[this.degree] + "x^" + i;
 		return s;
 	};
+	this.reshape = function(new_degree){
+		var out = new eVector(new_degree+1);
+		out.zeros();
+		for(var i = 0;i<=this.degree;i++)
+			out.data[i] = this.coeff.data[i];
+		this.coeff = out;
+		this.degree = new_degree;
+	};
 	this.eval = function(x){
 		if(typeof(x)=="number"){
 			var s = 1;
@@ -575,7 +596,6 @@ function eODE(){
 		var aux;
 		out = new eMatrix(this.N,x0.length);
 		out.data[0] = x0.copy();
-		t = this.time[0];
 		for(var i = 1;i<out.rows;i++){
 			aux = fun_f(out.data[i-1],this.time[i-1]);
 			dt = this.time[i] - this.time[i-1];
@@ -583,6 +603,22 @@ function eODE(){
 		}
 		return out;
 	};
+	this.rungeKuttaSolver = function(fun_f,x0){
+		var out;
+		var dt;
+		var k1,k2,k3,k4;
+		out = new eMatrix(this.N,x0.length);
+		out.data[0] = x0.copy();
+		for(var i = 1;i<out.rows;i++){
+			dt = this.time[i] - this.time[i-1];
+			k1 = fun_f(out.data[i-1],this.time[i-1]).times(dt);
+			k2 = fun_f(out.data[i-1].add(k1.times(0.5)),this.time[i-1] + dt/2).times(dt);
+			k3 = fun_f(out.data[i-1].add(k2.times(0.5)),this.time[i-1] + dt/2).times(dt);
+			k4 = fun_f(out.data[i-1].add(k3),this.time[i-1] + dt).times(dt);
+			out.data[i] = out.data[i-1].add(k1.add(k2.times(2)).add(k3.times(2)).add(k4).times(1/6.0));
+		}
+		return out;
+	}
 }
 
 /*****************************/
@@ -745,4 +781,127 @@ function secant_method(fun_f,a,b,N){
 			break;
 	}
 	return x;
+}
+
+/*************************/
+/*Transfer Function Class*/
+/*************************/
+function eTransferFunction(num,den){
+	this.num = num;
+	this.den = den;
+
+	this.toString = function(){
+		var sn = this.num.toString();
+		var sd = this.den.toString();
+		var aux = "";
+		var s = "-"
+		for(var i = 0;i<sd.length;i++)
+			aux = aux + s;
+		s = sn + "\n" + aux + "\n" + sd;
+		return s;
+	};
+	this.getStateEquations = function(){
+		var A,B,C,D;
+		var r;
+		var out = [];
+		this.num.reshape(this.den.degree);
+		r = this.den.coeff.data[this.den.degree];
+		A = new eMatrix(this.den.degree,this.den.degree);
+		B = new eMatrix(this.den.degree,1);
+		C = new eMatrix(1,this.den.degree);
+		D = this.num.coeff.data[this.num.degree]/r;
+		A.zeros();
+		B.zeros();
+		B.data[B.rows-1].data[0] = 1;
+		for(var i = 0;i<A.rows;i++)
+			A.data[i].data[i+1] = 1;
+		for(var i = 0;i<A.rows;i++){
+			A.data[A.rows-1].data[i] = -this.den.coeff.data[i]/r;
+			C.data[0].data[i] = this.num.coeff.data[i]/r - this.den.coeff.data[i]*D/r; 
+		}
+		out.push(A);
+		out.push(B);
+		out.push(C);
+		out.push(D);
+		return out;
+	};
+	this.solve = function(fun_u,time_domain,N){
+		var A;
+		var solver;
+		A = this.getStateEquations();
+		solver = new eODE();
+		solver.mesh(time_domain,N);
+		var x0 = new eVector(this.den.degree);
+		x0.zeros();
+		function fun_df(u,t){
+			var temp = u.transpose();
+			var out = A[0].dot(temp).add(A[1].times(fun_u(t)));
+			return out.transpose().data[0];
+		}
+		var ans = solver.rungeKuttaSolver(fun_df,x0);
+		ans = ans.dot(A[2].transpose());
+		var res = new eMatrix(ans.rows,ans.cols);
+		for(var i = 0;i<ans.rows;i++)
+				res.data[i].data[0] = ans.data[i].data[0] + A[3]*fun_u(solver.time[i]);
+		return res;
+	}
+}
+
+/***************/
+/*Circuit Class*/
+/***************/
+function eCircuit(){
+	this.next_c = null;
+	this.type = "";
+	this.num = new ePoly(0);
+	this.den = new ePoly(0);
+	this.num.zeros();
+	this.den.zeros();
+
+	this.setToResistor = function(R){
+		this.den.coeff.data[0] = R;
+		this.num.ones();
+	};
+	this.setToCapacitor = function(C){
+		this.num = new ePoly(1);
+		this.num.coeff.data[0] = 0;
+		this.num.coeff.data[1] = C;
+		this.den.ones();
+	};
+	this.setToInductor = function(L){
+		this.num.ones();
+		this.den = new ePoly(1);
+		this.den.coeff.data[0] = 0;
+		this.den.coeff.data[1] = L;
+	}
+	this.setCircuitSerie = function(c){
+		this.next_c = c;
+		this.type = "serie";
+	};
+	this.setCircuitParallel = function(c){
+		this.next_c = c;
+		this.type = "parallel";
+	};
+	this.getTransferFunction=function(){
+		var numerator,denominator;
+		if(this.next_c == null){
+			return new eTransferFunction(this.num,this.den);
+		}
+		else{
+			var temp = this.next_c.getTransferFunction();
+			if(this.type == "parallel"){
+				numerator = this.num.times(temp.den).add(this.den.times(temp.num));
+				denominator = this.den.times(temp.den);
+			}
+			else{
+				numerator = this.num.times(temp.num);
+				denominator = this.num.times(temp.den).add(this.den.times(temp.num));
+			}
+			return new eTransferFunction(numerator,denominator);
+		}
+	};
+	this.getStateEquations = function(){
+		tf = this.getTransferFunction();
+		return tf.getStateEquations();
+	}
 }
