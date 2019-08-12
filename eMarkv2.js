@@ -214,6 +214,12 @@ function eMatrix(rows,cols,str){
 		}
 		return out;
 	};
+	this.diag = function(){
+		var d = new eVector(this.rows);
+		for(var i = 0;i<this.rows;i++)
+			d.data[i] = this.data[i].data[i];
+		return d;
+	}
 	this.LU = function(){
 		var lu=[];
 		var L,U;
@@ -547,6 +553,17 @@ function ePoly(degree,coeff){
 			return out;
 		}
 	};
+	this.roots = function(N){
+		var A = new eMatrix(this.degree,this.degree);
+		A.zeros();
+		for(var i = 0;i<A.rows;i++){
+			A.data[0].data[i] = -this.coeff.data[this.degree -i-1]/this.coeff.data[this.degree];
+			if((i+1)<A.rows)
+				A.data[i+1].data[i] = 1;
+		}
+		var out = A.eig(N);
+		return out[0].diag();
+	};
 }
 function polynomial_interpolation(x,y){
 	var out = new ePoly(0);
@@ -873,7 +890,7 @@ function eCircuit(){
 		this.den = new ePoly(1);
 		this.den.coeff.data[0] = 0;
 		this.den.coeff.data[1] = L;
-	}
+	};
 	this.setCircuitSerie = function(c){
 		this.next_c = c;
 		this.type = "serie";
@@ -903,5 +920,6 @@ function eCircuit(){
 	this.getStateEquations = function(){
 		tf = this.getTransferFunction();
 		return tf.getStateEquations();
-	}
+	};
 }
+
